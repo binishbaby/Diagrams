@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1654" math="0" shadow="1">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- ═══════════════════════════════════════════
+         TITLE
+    ═══════════════════════════════════════════ -->
+    <mxCell id="title" value="Entra Conditional Access – FIDO &amp; MFA Policy Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#1e293b;" vertex="1" parent="1">
+      <mxGeometry x="80" y="30" width="1000" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="subtitle" value="Three-policy design: FIDO enforcement for all users, with Microsoft Authenticator fallback for non-FIDO apps" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#64748b;" vertex="1" parent="1">
+      <mxGeometry x="80" y="68" width="1000" height="24" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════
+         START NODE
+    ═══════════════════════════════════════════ -->
+    <mxCell id="start" value="&lt;b&gt;👤 Business User Sign-in&lt;/b&gt;&lt;br/&gt;&lt;font color='#93c5fd' style='font-size:10px'&gt;Entra ID evaluates CA policies&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e40af;strokeColor=#1e3a8a;fontColor=#ffffff;fontSize=12;arcSize=50;" vertex="1" parent="1">
+      <mxGeometry x="390" y="110" width="280" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- arrow: start → diamond1 -->
+    <mxCell id="e_start_d1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="start" target="diamond1" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════
+         DIAMOND 1 – Group membership
+    ═══════════════════════════════════════════ -->
+    <mxCell id="diamond1" value="&lt;b&gt;Is user in&lt;br/&gt;Group2-BusinessUsers?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f59e0b;strokeColor=#d97706;fontColor=#1e293b;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="390" y="210" width="280" height="120" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════
+         LEFT BRANCH — GROUP 1 → POLICY 1
+    ═══════════════════════════════════════════ -->
+
+    <!-- arrow: diamond1 → policy1 (NO, left) -->
+    <mxCell id="e_d1_p1" value="NO" style="edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontStyle=1;fontColor=#dc2626;fontSize=11;" edge="1" source="diamond1" target="policy1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="200" y="270" />
+          <mxPoint x="200" y="390" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- POLICY 1 BOX -->
+    <mxCell id="policy1" value="&lt;b&gt;📋 Policy 1 – FIDO Requirement · All Apps&lt;/b&gt;&lt;br/&gt;&lt;i style='font-size:10px;color:#1e40af'&gt;Business Users (Group1)&lt;/i&gt;&lt;hr/&gt;👥 &lt;b&gt;Users:&lt;/b&gt; Include: Group1-BusinessUsers&lt;br/&gt;           Exclude: Group2-BusinessUsers&lt;br/&gt;📦 &lt;b&gt;Apps:&lt;/b&gt; All Resources (no exclusions)&lt;br/&gt;💻 &lt;b&gt;Devices:&lt;/b&gt; Any (excl Android &amp;amp; iOS)&lt;br/&gt;🌐 &lt;b&gt;Network:&lt;/b&gt; Any network / location" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;fontColor=#1e293b;fontSize=11;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+      <mxGeometry x="50" y="390" width="300" height="140" as="geometry" />
+    </mxCell>
+
+    <!-- arrow: policy1 → grant1 -->
+    <mxCell id="e_p1_g1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="policy1" target="grant1" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- GRANT 1 -->
+    <mxCell id="grant1" value="🔑 &lt;b&gt;GRANT: Passkeys – FIDO / Mobile&lt;/b&gt;&lt;br/&gt;Authentication Strength = FIDO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;strokeWidth=2;fontColor=#92400e;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="75" y="570" width="250" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- arrow: grant1 → outcome1 -->
+    <mxCell id="e_g1_o1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="grant1" target="outcome1" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- OUTCOME 1 -->
+    <mxCell id="outcome1" value="✅ &lt;b&gt;Access Granted – ALL Apps&lt;/b&gt;&lt;br/&gt;FIDO enforced across all applications" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#2563eb;strokeWidth=2;fontColor=#1e40af;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="75" y="662" width="250" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════
+         RIGHT BRANCH — GROUP 2 → POLICY 2
+    ═══════════════════════════════════════════ -->
+
+    <!-- arrow: diamond1 → policy2 (YES, right) -->
+    <mxCell id="e_d1_p2" value="YES" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontStyle=1;fontColor=#16a34a;fontSize=11;" edge="1" source="diamond1" target="policy2" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="840" y="270" />
+          <mxPoint x="840" y="390" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- POLICY 2 BOX -->
+    <mxCell id="policy2" value="&lt;b&gt;📋 Policy 2 – FIDO · Exclude Non-FIDO Apps&lt;/b&gt;&lt;br/&gt;&lt;i style='font-size:10px;color:#059669'&gt;Business Users (Group2)&lt;/i&gt;&lt;hr/&gt;👥 &lt;b&gt;Users:&lt;/b&gt; Include: Group2-BusinessUsers&lt;br/&gt;           Exclude: none&lt;br/&gt;📦 &lt;b&gt;Apps:&lt;/b&gt; All Resources&lt;br/&gt;           Exclude: App1 | App2 | App3&lt;br/&gt;💻 &lt;b&gt;Devices:&lt;/b&gt; Any (excl Android &amp;amp; iOS)&lt;br/&gt;🌐 &lt;b&gt;Network:&lt;/b&gt; Any network / location" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;strokeWidth=2;fontColor=#1e293b;fontSize=11;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+      <mxGeometry x="690" y="390" width="300" height="155" as="geometry" />
+    </mxCell>
+
+    <!-- arrow: policy2 → diamond2 -->
+    <mxCell id="e_p2_d2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="policy2" target="diamond2" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- DIAMOND 2 – App excluded? -->
+    <mxCell id="diamond2" value="&lt;b&gt;Is the app in the&lt;br/&gt;excluded list?&lt;br/&gt;(App1 | App2 | App3)&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f59e0b;strokeColor=#d97706;fontColor=#1e293b;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="700" y="590" width="280" height="130" as="geometry" />
+    </mxCell>
+
+    <!-- arrow: diamond2 → grant2 (NO → FIDO grant) -->
+    <mxCell id="e_d2_g2" value="NO – FIDO-capable app" style="edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontStyle=1;fontColor=#16a34a;fontSize=11;" edge="1" source="diamond2" target="grant2" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="580" y="655" />
+          <mxPoint x="580" y="780" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- GRANT 2 -->
+    <mxCell id="grant2" value="🔑 &lt;b&gt;GRANT: Passkeys – FIDO / Mobile&lt;/b&gt;&lt;br/&gt;Authentication Strength = FIDO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;strokeWidth=2;fontColor=#92400e;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="455" y="780" width="250" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- arrow: grant2 → outcome2 -->
+    <mxCell id="e_g2_o2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="grant2" target="outcome2" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- OUTCOME 2 -->
+    <mxCell id="outcome2" value="✅ &lt;b&gt;Access Granted&lt;/b&gt;&lt;br/&gt;FIDO enforced on this app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#059669;strokeWidth=2;fontColor=#065f46;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="455" y="872" width="250" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════
+         YES BRANCH FROM DIAMOND 2 → POLICY 3
+    ═══════════════════════════════════════════ -->
+
+    <!-- arrow: diamond2 → policy3 (YES → non-FIDO app) -->
+    <mxCell id="e_d2_p3" value="YES – Non-FIDO app" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontStyle=1;fontColor=#dc2626;fontSize=11;" edge="1" source="diamond2" target="policy3" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="1090" y="655" />
+          <mxPoint x="1090" y="780" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- POLICY 3 BOX — NEW -->
+    <mxCell id="policy3" value="&lt;b&gt;📋 Policy 3 ✨ NEW – MFA · Non-FIDO Apps Only&lt;/b&gt;&lt;br/&gt;&lt;i style='font-size:10px;color:#9333ea'&gt;MFA Requirement – Non-FIDO Apps – Business Users&lt;/i&gt;&lt;hr/&gt;👥 &lt;b&gt;Users:&lt;/b&gt; Include: Group2-BusinessUsers&lt;br/&gt;           Exclude: none&lt;br/&gt;📦 &lt;b&gt;Apps:&lt;/b&gt; Include: App1 | App2 | App3&lt;br/&gt;           Exclude: none&lt;br/&gt;💻 &lt;b&gt;Devices:&lt;/b&gt; Any (excl Android &amp;amp; iOS)&lt;br/&gt;🌐 &lt;b&gt;Network:&lt;/b&gt; Any network / location" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#9333ea;strokeWidth=2.5;fontColor=#1e293b;fontSize=11;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+      <mxGeometry x="840" y="780" width="310" height="160" as="geometry" />
+    </mxCell>
+
+    <!-- arrow: policy3 → grant3 -->
+    <mxCell id="e_p3_g3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="policy3" target="grant3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- GRANT 3 -->
+    <mxCell id="grant3" value="🔐 &lt;b&gt;GRANT: Microsoft Authenticator&lt;/b&gt;&lt;br/&gt;Authentication Strength = MS Authenticator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#9333ea;strokeWidth=2;fontColor=#6b21a8;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="850" y="980" width="290" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- arrow: grant3 → outcome3 -->
+    <mxCell id="e_g3_o3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="grant3" target="outcome3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- OUTCOME 3 -->
+    <mxCell id="outcome3" value="✅ &lt;b&gt;Access Granted – App1 / App2 / App3&lt;/b&gt;&lt;br/&gt;Microsoft Authenticator MFA enforced" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#9333ea;strokeWidth=2;fontColor=#6b21a8;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="850" y="1072" width="290" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════
+         NET RESULT — MERGE ALL THREE PATHS
+    ═══════════════════════════════════════════ -->
+
+    <!-- arrow: outcome1 → net result -->
+    <mxCell id="e_o1_net" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;strokeColor=#64748b;" edge="1" source="outcome1" target="net_result" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="200" y="1200" />
+          <mxPoint x="360" y="1200" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- arrow: outcome2 → net result -->
+    <mxCell id="e_o2_net" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;strokeColor=#64748b;" edge="1" source="outcome2" target="net_result" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="580" y="1200" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- arrow: outcome3 → net result -->
+    <mxCell id="e_o3_net" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1;strokeColor=#64748b;" edge="1" source="outcome3" target="net_result" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="995" y="1200" />
+          <mxPoint x="820" y="1200" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- NET RESULT BOX -->
+    <mxCell id="net_result" value="&lt;b&gt;📊 Net Coverage – All Business Users&lt;/b&gt;&lt;hr/&gt;🔵 Group1-BusinessUsers → &lt;b&gt;FIDO enforced on ALL apps&lt;/b&gt; (Policy 1)&lt;br/&gt;🟢 Group2-BusinessUsers → &lt;b&gt;FIDO enforced on FIDO-capable apps&lt;/b&gt; (Policy 2)&lt;br/&gt;🟣 Group2-BusinessUsers → &lt;b&gt;MS Authenticator enforced on App1 | App2 | App3&lt;/b&gt; (Policy 3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#475569;strokeWidth=2;fontColor=#1e293b;fontSize=12;align=left;spacingLeft=14;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+      <mxGeometry x="360" y="1160" width="460" height="100" as="geometry" />
+    </mxCell>
+
+    <!-- arrow: net result → end -->
+    <mxCell id="e_net_end" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="net_result" target="end_node" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- END NODE -->
+    <mxCell id="end_node" value="&lt;b&gt;🔒 MFA / FIDO Enforced Everywhere&lt;/b&gt;&lt;br/&gt;&lt;font color='#94a3b8' style='font-size:10px'&gt;No business user accesses any app without strong authentication&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#0f172a;fontColor=#ffffff;fontSize=12;arcSize=40;" vertex="1" parent="1">
+      <mxGeometry x="390" y="1300" width="400" height="54" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════
+         SIDE CALLOUT NOTE
+    ═══════════════════════════════════════════ -->
+    <mxCell id="callout_why" value="&lt;b&gt;💡 Why Three Policies?&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;App1, App2, App3 do not support FIDO authentication.&lt;br/&gt;&lt;br/&gt;Policy 2 excludes them from FIDO enforcement.&lt;br/&gt;&lt;br/&gt;Without Policy 3, Group2 users would access these apps with &lt;b&gt;no MFA at all&lt;/b&gt; — a security gap.&lt;br/&gt;&lt;br/&gt;Policy 3 targets exactly those apps and enforces &lt;b&gt;Microsoft Authenticator&lt;/b&gt; as the fallback MFA method.&lt;br/&gt;&lt;br/&gt;Result: &lt;b&gt;no coverage gap&lt;/b&gt; for any user on any app." style="shape=callout;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#f59e0b;strokeWidth=1.5;dashed=1;fontColor=#78350f;fontSize=11;align=left;spacingLeft=8;perimeter=calloutPerimeter;size=20;position=0.5;direction=south;" vertex="1" parent="1">
+      <mxGeometry x="50" y="780" width="240" height="260" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════
+         LEGEND
+    ═══════════════════════════════════════════ -->
+    <mxCell id="legend_title" value="&lt;b&gt;LEGEND&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#1e293b;" vertex="1" parent="1">
+      <mxGeometry x="50" y="1090" width="80" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="leg1" value="Policy 1 – Group1 (FIDO · all apps)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#1e3a8a;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="50" y="1118" width="230" height="28" as="geometry" />
+    </mxCell>
+    <mxCell id="leg2" value="Policy 2 – Group2 (FIDO · excl non-FIDO apps)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontColor=#065f46;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="50" y="1152" width="230" height="28" as="geometry" />
+    </mxCell>
+    <mxCell id="leg3" value="Policy 3 ✨ NEW (MS Authenticator · App1/2/3 only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#9333ea;fontColor=#6b21a8;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="50" y="1186" width="230" height="28" as="geometry" />
+    </mxCell>
+    <mxCell id="leg4" value="Decision Point" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontColor=#92400e;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="50" y="1220" width="100" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="leg5" value="Grant / Auth Strength" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontColor=#92400e;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="158" y="1228" width="122" height="28" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>
