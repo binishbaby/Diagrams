@@ -54,11 +54,19 @@
 .PARAMETER CertificateThumbprint
     Certificate for app-only authentication.
 
+.PARAMETER ClientSecret
+    Client secret (SecureString) for app-only authentication, as an alternative to a certificate.
+    Prefer certificates for regular use.
+
 .PARAMETER Scopes
     Override the delegated scopes requested at sign-in.
 
 .EXAMPLE
     .\Export-AgentSecurity.ps1
+
+.EXAMPLE
+    $secret = Read-Host 'Client secret' -AsSecureString
+    .\Export-AgentSecurity.ps1 -TenantId contoso.onmicrosoft.com -ClientId <app-id> -ClientSecret $secret
 
 .EXAMPLE
     .\Export-AgentSecurity.ps1 -TenantId contoso.onmicrosoft.com -IncludeSignInLogs -SignInDays 14 -OutputFolder C:\Reports
@@ -79,8 +87,10 @@ param(
     [int]$MaxSignIns = 50000,
     [Parameter(ParameterSetName = 'Delegated')][switch]$UseDeviceCode,
     [Parameter(ParameterSetName = 'Delegated')][string[]]$Scopes,
-    [Parameter(ParameterSetName = 'AppOnly', Mandatory)][string]$ClientId,
-    [Parameter(ParameterSetName = 'AppOnly', Mandatory)][string]$CertificateThumbprint
+    [Parameter(ParameterSetName = 'AppOnly', Mandatory)]
+    [Parameter(ParameterSetName = 'AppSecret', Mandatory)][string]$ClientId,
+    [Parameter(ParameterSetName = 'AppOnly', Mandatory)][string]$CertificateThumbprint,
+    [Parameter(ParameterSetName = 'AppSecret', Mandatory)][securestring]$ClientSecret
 )
 
 #Requires -Version 7.0
@@ -284,6 +294,11 @@ if ($PSCmdlet.ParameterSetName -eq 'AppOnly') {
     if (-not $TenantId) { throw '-TenantId is required with -ClientId / -CertificateThumbprint.' }
     Connect-MgGraph -TenantId $TenantId -ClientId $ClientId -CertificateThumbprint $CertificateThumbprint -NoWelcome
 }
+elseif ($PSCmdlet.ParameterSetName -eq 'AppSecret') {
+    if (-not $TenantId) { throw '-TenantId is required with -ClientId / -ClientSecret.' }
+    $cred = [pscredential]::new($ClientId, $ClientSecret)
+    Connect-MgGraph -TenantId $TenantId -ClientSecretCredential $cred -NoWelcome
+}
 else {
     $connect = @{ NoWelcome = $true; ContextScope = 'Process' }
     if ($TenantId) { $connect.TenantId = $TenantId }
@@ -323,7 +338,14 @@ $blueprints        = @(Invoke-Section 'Blueprints'           'beta/applications/
 $agentUsers        = @(Invoke-Section 'AgentUsers'           'beta/users/microsoft.graph.agentUser?$top=999&$select=id,displayName,userPrincipalName,accountEnabled,createdDateTime,mail,jobTitle,department,assignedLicenses,identityParentId,signInActivity')
 if ($agentUsers.Count -eq 0 -and @($script:Tables['Errors'] | Where-Object Section -eq 'AgentUsers').Count -gt 0) {
     # signInActivity needs AuditLog.Read.All + P1; retry without it.
+    $before = $script:ErrCount['AgentUsers(noSignIn)'] ?? 0
     $agentUsers    = @(Invoke-Section 'AgentUsers(noSignIn)' 'beta/users/microsoft.graph.agentUser?$top=999')
+    if (($script:ErrCount['AgentUsers(noSignIn)'] ?? 0) -eq $before) {
+        # Retry worked - the first attempt is not a real failure.
+        $script:ErrCount.Remove('AgentUsers')
+        $errs = $script:Tables['Errors']
+        foreach ($e in @($errs | Where-Object Section -eq 'AgentUsers')) { [void]$errs.Remove($e) }
+    }
 }
 $script:Raw.AgentIdentities = $agentIdentities
 $script:Raw.BlueprintPrincipals = $blueprintPrincs
