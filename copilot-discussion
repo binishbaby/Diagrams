@@ -1,0 +1,248 @@
+###The Agent 365 registry (M365 admin center) is a centralised, tenant-wide inventory of agents; coverage depends on the supported platforms, integrations and registration/discovery mechanisms. The registry list and the agent detail pages expose metadata such as owner, platform/publisher, status, permissions/scopes, data sources, risk signals and usage, but not every field is populated for every agent type. Each Entra agent identity is a service principal (servicePrincipalType 'ServiceIdentity', Graph type #microsoft.graph.agentIdentity) with its own unique directory object ID; it has no app registration of its own - its agentIdentityBlueprintId holds the blueprint's app ID. Registry records can reference the blueprint, agent identity and, where one exists, the optional agent user. The inventory is also exposed through the Microsoft Graph package catalog API (copilot/admin/catalog/packages), which is separate from the Entra agent identity API.
+Gaps / caveats: Identity model varies by agent type: Copilot Studio agents created after Agent ID was enabled get an agent identity; agents created earlier (or where the environment had not opted in before July 2026) may still use a classic app registration/service principal, which Microsoft is migrating; Agent Builder (declarative) agents currently have neither an app registration nor an Agent ID, so they appear in the registry/catalog but not as Entra agent identities. No dedicated 'business classification' field was confirmed; custom security attributes on agent identities could hold it (needs design). The Agent 365 Graph APIs require an Agent 365 licence - confirmed in our tenant test on 11-Oct-2026.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/builder/agent-registry | https://learn.microsoft.com/en-us/microsoft-365-copilot/extensibility/api/admin-settings/package/overview | https://learn.microsoft.com/en-us/microsoft-agent-365/admin/graph-api | https://github.com/microsoftgraph/msgraph-metadata (clean_beta_metadata - agentIdentity, agentIdentityBlueprint, servicePrincipal.servicePrincipalType, agentRegistration) | https://learn.microsoft.com/en-us/microsoft-copilot-studio/admin-use-entra-agent-identities | https://learn.microsoft.com/en-us/microsoft-copilot-studio/govern-agents-identities-overview | https://github.com/microsoft/zerotrustassessment (src/powershell/tests, agent identity governance tests)"
+
+
+###Azure (Microsoft Foundry) and Copilot Studio agents are native. Connected platforms documented for registry sync/observability: Amazon Bedrock (Agents Classic and AgentCore), Google Vertex AI, Anthropic Claude Managed Agents and Oracle Generative AI Agents (preview). Other agents can be onboarded with the Agent 365 SDK, and Microsoft lists ecosystem partner agents available in Agent 365.
+Gaps / caveats: No native connector was found for ServiceNow, SAP, Salesforce or Databricks; Microsoft's documentation mentions Salesforce and Databricks only as places agents run. Those platforms would rely on vendor adoption of the Agent 365 SDK - confirm per vendor with Microsoft. External/SaaS agents not onboarded via the SDK cannot be governed at the agent-identity level. Registry sync is preview.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/admin/connected-platforms | https://learn.microsoft.com/en-us/microsoft-agent-365/admin/agent-registry | https://learn.microsoft.com/en-us/microsoft-agent-365/third-party-agents | https://learn.microsoft.com/en-us/microsoft-agent-365/connect-existing-agents"
+
+
+###Two layers. (a) Agent 365 shadow AI discovery uses Defender + Intune to surface unregistered local agents and MCP servers on managed devices and lists them for review (register, remediate or decommission). (b) Unapproved AI vendors/SaaS are identified by Defender for Cloud Apps Cloud Discovery (Generative AI category, app risk scores) and Entra Global Secure Access at the network layer.
+Gaps / caveats: Relies on additional Microsoft security licensing (Defender for Endpoint/Cloud Apps, Intune, Global Secure Access) and only sees managed devices / routed traffic. Shadow AI discovery is preview. Coverage of unmanaged/BYOD devices needs investigation.
+References: https://www.microsoft.com/en-us/security/blog/2026/05/01/microsoft-agent-365-now-generally-available-expands-capabilities-and-integrations/ | https://techcommunity.microsoft.com/blog/agent-365-blog/whats-new-in-agent-365-%E2%80%93-june-2026/4535107 | https://microsoft.github.io/zerotrustassessment/de/docs/workshop-guidance/AI/AI_099 | https://rodtrent.substack.com/p/the-shadow-ai-problem-gaining-visibility"
+
+
+###Agent Map visualises agents grouped by platform, filterable by status, publisher, platform, channel, data source and usage, with drill-down to ownership and configuration. Defender XDR adds agent asset context mapping (devices the agent runs on, configured MCP servers, associated identities, cloud resources reachable) and attack-path analysis for Foundry agents.
+Gaps / caveats: A single unified service topology linking agents, models, APIs, data sources and tools across clouds was not confirmed. Mapping is split between Agent Map (M365 admin center) and Defender. Needs a product demo against UNFI scenarios.
+References: https://learn.microsoft.com/microsoft-365/admin/manage/agent-map | https://techcommunity.microsoft.com/blog/microsoft-security-blog/start-secure-and-stay-secure-on-your-ai-agent-journey-with-microsoft-defender/4469430 | https://learn.microsoft.com/en-us/training/paths/implement-ai-security/"
+
+
+###Agent 365 observability (OpenTelemetry) records spans for agent invocation, each LLM inference call and each tool call. Copilot Studio agents emit this automatically; custom agents use the Microsoft OpenTelemetry Distro/Agent 365 SDK. Telemetry surfaces in Defender (CloudAppEvents advanced hunting), Purview and the M365 admin center. Third-party observability for Bedrock, Vertex AI and Claude Managed Agents is documented as Frontier/in development.
+Gaps / caveats: Only instrumented or connected agents are visible; calls made by non-instrumented agents to external APIs/models are not captured. Requires Purview auditing to be enabled. Third-party observability is still in development.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/developer/observability-concepts | https://learn.microsoft.com/en-us/microsoft-agent-365/developer/observability | https://learn.microsoft.com/en-us/microsoft-agent-365/admin/third-party-agent-observability"
+
+
+###Microsoft 365 admin center > Agents > Tools lets admins allow/block MCP servers, plugins and skills org-wide; blocking an MCP server also disables dependent plugins and connectors. Developer-registered tools (e.g. remote MCP servers) go to an admin review/approval queue (AI Administrator or Global Administrator). A preview integration with Azure API Management (AI Gateway) discovers MCP servers registered in APIM for governance; per-tool controls need the APIM AI Gateway tier. Conditional Access for agent identities governs token access to Entra-protected resources.
+Gaps / caveats: There is no general-purpose egress gateway for all agent traffic to external resources; non-Microsoft destinations need APIM/Global Secure Access designs. Tools governance may not be available in all regions yet, and the APIM integration is preview.
+References: https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-plugins-skills-mcp-servers?view=o365-worldwide | https://techcommunity.microsoft.com/blog/microsoftmechanicsblog/new-agent-365-controls-for-microsoft-admins/4552315 | https://learn.microsoft.com/en-us/microsoft-agent-365/tooling-servers-overview | https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-conditions"
+
+
+###Blocking is done with the wider Microsoft stack: Defender for Cloud Apps policies block apps marked unsanctioned; Global Secure Access web content filtering blocks by AI URL category; Purview Endpoint DLP can warn/block sharing sensitive data with third-party generative AI sites; the Agent 365 registry can block agents in Microsoft 365 experiences.
+Gaps / caveats: Enforcement depends on managed devices / traffic routed through Microsoft controls and on additional licences. Not an Agent 365 feature on its own. Coverage for unmanaged devices needs investigation.
+References: https://microsoft.github.io/zerotrustassessment/de/docs/workshop-guidance/AI/AI_099 | https://learn.microsoft.com/purview/ai-copilot-studio | https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-actions?view=o365-worldwide"
+
+
+###Admins can block individual plugins/skills and MCP servers tenant-wide; blocking an MCP server also blocks dependent plugins and linked connectors, and unblocking restores them. New developer tools require admin approval. Defender adds real-time blocking of unsafe tool invocation for Copilot Studio agents.
+Gaps / caveats: Tools governance pages are marked preview / region-dependent. Per-agent tool selection in Copilot Studio is set by the maker, not centrally per agent - confirm granularity needed by UNFI.
+References: https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-plugins-skills-mcp-servers?view=o365-worldwide | https://techcommunity.microsoft.com/blog/microsoftmechanicsblog/new-agent-365-controls-for-microsoft-admins/4552315 | https://techcommunity.microsoft.com/blog/microsoft-security-blog/start-secure-and-stay-secure-on-your-ai-agent-journey-with-microsoft-defender/4469430"
+
+
+###Entra Agent ID blocks highly privileged roles for agents (Global Administrator, Privileged Role Administrator, User Administrator) and custom roles cannot be assigned to agent identities. Permissions are granted explicitly (app roles / delegated grants), inheritable permissions are controlled on the blueprint, and Conditional Access for agents can block access by risk. Microsoft best practice is to periodically audit blueprint permissions to avoid privilege creep.
+Gaps / caveats: No 'permission boundary' construct (a hard ceiling per agent) was found. Copilot Studio connections can default to the maker's own credentials, so an agent may act with the maker's access (third-party analysis) - needs a design standard. Usage-based right-sizing is not confirmed (see #19).
+References: https://learn.microsoft.com/en-us/entra/agent-id/authorization-agent-id | https://docs.azure.cn/en-us/entra/agent-id/best-practices-agent-id | https://learn.microsoft.com/en-us/entra/id-protection/concept-risky-agents"
+
+
+###Purview: a DLP policy scoped to the Microsoft 365 Copilot location can stop Copilot Studio agents from processing content with specified sensitivity labels (SharePoint knowledge source); agent responses show the highest-priority label of the data used, and new Word/PowerPoint content inherits it. Purview data security and compliance for Agent 365 is documented. Entra Conditional Access applies to agent identities and agent users (agent risk as a condition; a Microsoft-managed policy blocks high-risk agents).
+Gaps / caveats: DLP blocking of sensitive prompts typed directly into Copilot/agents was not confirmed - needs verification. Label/encryption support is limited to specific knowledge sources. Data Security Posture Management (classic) does not support Agent 365. Third-party agents are only covered where they integrate with Purview.
+References: https://learn.microsoft.com/purview/ai-copilot-studio | https://learn.microsoft.com/en-us/purview/ai-agent-365 | https://learn.microsoft.com/en-us/entra/id-protection/concept-risky-agents | https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-conditions"
+
+
+###There is no native policy-as-code engine in Agent 365. Many controls are exposed through Microsoft Graph (Conditional Access policies including agent conditions, Entra Agent ID objects, Agent 365 Graph APIs in preview), which makes them scriptable through IaC/CI pipelines built by UNFI.
+Gaps / caveats: Policy-as-code consistency across all environments (including non-Microsoft clouds) would require custom tooling. Whether common IaC tools (e.g. Terraform providers, Microsoft365DSC) support the new agent objects was not verified - needs investigation.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/admin/graph-api | https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-conditions"
+###Agent identities and blueprints have owners (technical) and sponsors (business owner accountable for purpose, lifecycle and access reviews); a sponsor is required when a blueprint is created. The registry shows owners and flags ownerless agents. Description/metadata capture purpose.
+Gaps / caveats: Risk classification as a governance attribute is not a built-in field; ID Protection provides a dynamic risk level, but a business risk tier would need custom security attributes or process. Agent Builder agents have no Entra agent identity, so sponsor fields don't apply to them.
+References: https://learn.microsoft.com/en-us/entra/agent-id/manage-owners-sponsors-agents | https://learn.microsoft.com/en-us/entra/id-governance/agent-id-governance-overview | https://learn.microsoft.com/en-us/microsoft-agent-365/builder/agent-registry"
+
+
+###Agent 365 rules include 'reassign ownerless Agent Builder agents to the manager' and 'block ownerless agents without usage'; the registry highlights ownerless agents for reassignment. Entra lifecycle workflow tasks for agent sponsorship (e.g. 'Transfer agent identity sponsorships to manager') are referenced in Microsoft's Zero Trust Assessment checks; a third-party source states sponsorship transfers to the manager automatically.
+Gaps / caveats: The automatic reassignment rule in Agent 365 applies only to Agent Builder agents. Automatic sponsor transfer for Entra agent identities is not confirmed in Microsoft's main documentation - needs validation in tenant. Lifecycle Workflows require Entra ID Governance / Agent 365 licensing.
+References: https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-settings?view=o365-worldwide | https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-actions?view=o365-worldwide | https://github.com/microsoft/zerotrustassessment (src/powershell/tests, agent identity governance tests) | https://www.insentragroup.com/us/insights/geek-speak/modern-workplace/why-agent-governance-in-microsoft-entra-matters/"
+
+
+###The registry supports requests (publish/reject), publish, deploy, pin, block/unblock, delete (with 30-day recovery) and reassign ownership; policy templates are applied before an agent goes live; rules can auto-reject publish requests older than N days. Each governance action leaves an audit trail in Microsoft Purview.
+Gaps / caveats: Lifecycle depth differs by agent type (Microsoft, Copilot Studio, Agent Builder, third-party). Update/version history detail was not verified.
+References: https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-actions?view=o365-worldwide | https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-settings?view=o365-worldwide | https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-365-overview?view=o365-worldwide | https://learn.microsoft.com/en-us/microsoft-agent-365/developer/observability-concepts"
+
+
+###Entra ID Governance for agents: agent identities can receive access packages; when an assignment with an expiry date approaches, the sponsor is notified and must request an extension (new approval) or let it lapse. Access package assignments can have recurring access reviews.
+Gaps / caveats: Native periodic attestation of agent purpose, ownership and risk classification (beyond access) was not found - needs investigation. Agent governance features in Entra appear to require Agent 365 licensing (third-party licensing guide) - confirm with Microsoft.
+References: https://learn.microsoft.com/en-us/entra/id-governance/agent-id-governance-overview | https://techcommunity.microsoft.com/blog/microsoft-entra-blog/govern-ai-agent-identities-and-access-the-same-way-you-govern-your-employees/4529302 | https://learn.microsoft.com/en-us/entra/agent-id/manage-owners-sponsors-agents"
+
+
+###Agent 365 rules-based policies run automatically; Microsoft describes examples such as expiring inactive agents, flagging ownerless agents and blocking risky ones. Documented rule types include 'block ownerless agents without usage'. Access package expiry removes access when not renewed.
+Gaps / caveats: Configurable inactivity thresholds and automatic decommissioning (delete) of dormant agents with owners were not confirmed in the documentation - needs validation.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/overview | https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-settings?view=o365-worldwide"
+
+
+###Agents submitted for the organisation catalog go to a Requests queue for admin publish/reject; new tools need admin approval; Entra entitlement management can require approval before an agent receives permissions (access packages).
+Gaps / caveats: Copilot Studio creates the Entra agent identity at agent creation, not at publish, so the identity exists before any approval. Approval gating of agent creation itself depends on Power Platform environment governance - not evaluated here.
+References: https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-actions?view=o365-worldwide | https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-plugins-skills-mcp-servers?view=o365-worldwide | https://learn.microsoft.com/en-us/entra/id-governance/agent-id-governance-overview | https://learn.microsoft.com/en-us/microsoft-copilot-studio/admin-use-entra-agent-identities"
+
+
+###Defender identifies misconfigurations, excessive permissions and insecure instructions for agents. Entra blocks the most privileged roles for agents, and Microsoft recommends periodic audits of blueprint permissions.
+Gaps / caveats: No usage-based entitlement analytics (used vs granted permissions) for agent identities was confirmed - needs investigation. Microsoft Entra Permissions Management usage analysis is documented for human/workload identities, not agents.
+References: https://techcommunity.microsoft.com/blog/microsoft-security-blog/start-secure-and-stay-secure-on-your-ai-agent-journey-with-microsoft-defender/4469430 | https://learn.microsoft.com/en-us/entra/agent-id/authorization-agent-id | https://docs.azure.cn/en-us/entra/agent-id/best-practices-agent-id"
+
+
+###Visibility covers Entra/Microsoft 365 permissions and, through Defender agent asset context, the identities and cloud resources an agent can reach.
+Gaps / caveats: Analysis of native IAM permissions for agents running in AWS/GCP or SaaS platforms was not confirmed - needs investigation.
+References: https://techcommunity.microsoft.com/blog/microsoft-security-blog/start-secure-and-stay-secure-on-your-ai-agent-journey-with-microsoft-defender/4469430 | https://learn.microsoft.com/en-us/training/paths/implement-ai-security/"
+
+
+###Entra ID Governance supports access packages for agent identities (requested by the agent, by its sponsor, or assigned by admins), sponsor notifications before expiry and access reviews of package assignments, with removal when not renewed.
+Gaps / caveats: Permissions granted directly (outside access packages, e.g. app role assignments) are not confirmed to be in scope of reviews. Licensing for agent governance features needs confirmation.
+References: https://learn.microsoft.com/en-us/entra/id-governance/agent-id-governance-overview | https://techcommunity.microsoft.com/blog/microsoft-entra-blog/govern-ai-agent-identities-and-access-the-same-way-you-govern-your-employees/4529302"
+
+
+###Purview retention policies for Copilot and AI apps cover prompts and responses for Microsoft 365 Copilot and Copilot Studio (other AI apps via collection policies). Separate retention policies for Copilots and AI apps are available (MC1238434) and coverage was expanded to all supported Copilot apps (MC1400827). Data is held in a hidden mailbox folder and is discoverable with eDiscovery.
+Gaps / caveats: Third-party agents are covered only if their content is captured by Purview. Files created by agents follow existing SharePoint/OneDrive retention.
+References: https://learn.microsoft.com/en-us/purview/retention-policies-copilot | https://mc.merill.net/message/MC1238434 | https://www.itelio.com/en/microsoft-message-center/mc1400827"
+
+
+###Entra ID Protection for agents assigns risk levels (high/medium/low) based on detections; the Graph riskyAgent resource also carries blast-radius, exposure and runtime risk properties (beta). Purview Insider Risk Management has a Risky Agents policy (agents sorted by risk level) and a Risky AI usage template (prompt injection, protected material access).
+Gaps / caveats: A single holistic score combining agent-user-model interactions was not found; risk is spread across Entra, Purview and Defender. ID Protection for agents will require an Agent 365 licence. Several features are preview.
+References: https://learn.microsoft.com/en-us/entra/id-protection/concept-risky-agents | https://learn.microsoft.com/en-us/purview/insider-risk-management-monitoring-agents | https://learn.microsoft.com/en-us/purview/insider-risk-management-policy-templates"
+
+
+###Prompts and responses for Microsoft 365 Copilot and Copilot Studio are captured by Purview (audit, retention, eDiscovery). Agent 365 observability captures agent invocation, inference calls, tool calls and final output as OpenTelemetry spans, visible in Defender and Purview.
+Gaps / caveats: Capture of the agent's internal reasoning/decision chain is not documented. Third-party agents need SDK/OpenTelemetry instrumentation. Auditing must be enabled.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/developer/observability-concepts | https://learn.microsoft.com/en-us/purview/retention-policies-copilot | https://learn.microsoft.com/en-us/office365/servicedescriptions/microsoft-365-service-descriptions/microsoft-365-tenantlevel-services-licensing-guidance/microsoft-purview-service-description"
+
+
+###Observability spans record who invoked the agent, which inference and tool calls were made and timestamps; Copilot Studio agents emit this automatically. Purview audit records Copilot/agent interactions; the M365 usage report shows agent users and activity.
+Gaps / caveats: Non-instrumented third-party agents are not covered.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/developer/observability-concepts | https://learn.microsoft.com/en-us/microsoft-agent-365/builder/overview | https://learn.microsoft.com/microsoft-365/admin/activity-reports/microsoft-365-copilot-agents"
+
+
+
+###Copilot Studio usage is billed in Copilot Credits (pooled tenant-wide). Per-agent cost visibility in the Copilot Studio Monitor tab is on the roadmap (RM571196, in development). Agent execution costs are billed separately from Agent 365 licensing.
+Gaps / caveats: No native cost analytics by model or business unit in Agent 365 was found; this would need billing data exports plus BU tagging, or third-party tools. Needs investigation.
+References: https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-messages-management | https://mc.merill.net/message/RM571196 | https://www.licensingschool.co.uk/wp-content/uploads/2026/08/Agent-365-FAQs-13-August-2026.pdf"
+
+
+###M365 admin center > Reports > Usage > Microsoft 365 Copilot > Agents shows active agents and users (7-180 days). A newer version (preview/GA rollout 2026) adds per-user, per-agent and user-agent breakdowns and segmentation by who built the agent. The registry records creator/owner; department can be joined from Entra user attributes.
+Gaps / caveats: Documented scope limits (e.g. SharePoint agents not included at time of writing; preview limited to declarative agents and 30 days history). Sources conflict on per-user detail - verify in tenant.
+References: https://learn.microsoft.com/microsoft-365/admin/activity-reports/microsoft-365-copilot-agents | https://mc.merill.net/message/MC1148545 | https://learn.microsoft.com/en-us/microsoft-agent-365/builder/agent-registry"
+
+
+###Defender XDR training path covers assessing the blast radius of each agent identity and attack paths; Defender agent asset context mapping shows devices, MCP servers, identities and reachable cloud resources; 'Blast radius analysis' is listed as a preview investigation feature.
+Gaps / caveats: Preview features; visualization depth for non-Microsoft agents not verified.
+References: https://learn.microsoft.com/en-us/training/paths/implement-ai-security/ | https://techcommunity.microsoft.com/blog/microsoft-security-blog/start-secure-and-stay-secure-on-your-ai-agent-journey-with-microsoft-defender/4469430 | https://learn.microsoft.com/en-us/defender-xdr/whats-new"
+
+
+###Defender identifies agent misconfigurations, excessive permissions and insecure instructions; attack-path analysis covers Foundry agents; pre-built hunting queries target Copilot Studio agent weaknesses.
+Gaps / caveats: Detection of 'toxic combinations' within a single session (untrusted input + sensitive access + external send) was not found as a named capability - needs investigation/demo.
+References: https://techcommunity.microsoft.com/blog/microsoft-security-blog/start-secure-and-stay-secure-on-your-ai-agent-journey-with-microsoft-defender/4469430 | https://learn.microsoft.com/en-us/training/paths/implement-ai-security/"
+
+
+###Purview Audit retains records 180 days (Standard), up to 1 year (Premium) and up to 10 years with the add-on licence. Copilot interactions are audited, and AI interactions are retained and discoverable via retention policies and eDiscovery.
+Gaps / caveats: Retention length depends on licence (Audit Premium / 10-year add-on). Third-party agent activity only where it reaches Purview.
+References: https://learn.microsoft.com/en-us/office365/servicedescriptions/microsoft-365-service-descriptions/microsoft-365-tenantlevel-services-licensing-guidance/microsoft-purview-service-description | https://learn.microsoft.com/en-us/purview/retention-policies-copilot"
+
+
+###Defender XDR streaming API sends advanced-hunting events (e.g. CloudAppEvents, where agent telemetry lands) to Azure Event Hubs or storage for any SIEM; native Microsoft Sentinel integration. Entra diagnostic settings include RiskyAgents and AgentRiskEvents log categories (checked by Microsoft's Zero Trust Assessment).
+Gaps / caveats: Whether every agent-specific table (e.g. AIAgentsInfo) is supported by the streaming API was not confirmed - verify.
+References: https://learn.microsoft.com/en-us/defender-xdr/streaming-api-event-hub | https://learn.microsoft.com/en-us/microsoft-agent-365/developer/observability-concepts | https://github.com/microsoft/zerotrustassessment (src/powershell/tests, agent identity governance tests)"
+
+
+###Event Hubs streaming (Defender XDR) and Microsoft Graph APIs (security, Entra, Agent 365 preview APIs) provide integration points that a pipeline such as Cribl can consume.
+Gaps / caveats: A Cribl-specific integration was not verified with Cribl; Agent 365 Graph APIs are preview and licence-gated. Needs a PoC.
+References: https://learn.microsoft.com/en-us/defender-xdr/streaming-api-event-hub | https://learn.microsoft.com/en-us/microsoft-agent-365/admin/graph-api"
+###Purview Risky AI usage (prompt injection, protected material), DLP for the Copilot location and DSPM for AI inspect Microsoft Copilot/agent interactions. Defender for AI with Azure AI Prompt Shields detects jailbreak and data-leakage attempts for Foundry/Azure AI workloads. Defender provides real-time blocking of unsafe tool invocation for Copilot Studio agents.
+Gaps / caveats: Toxic-content and policy-violation inspection for third-party agents is not confirmed. Some capabilities are preview.
+References: https://learn.microsoft.com/en-us/purview/insider-risk-management-policy-templates | https://learn.microsoft.com/purview/ai-copilot-studio | https://azure.microsoft.com/en-us/blog/enhance-ai-security-with-azure-prompt-shields-and-azure-ai-content-safety/ | https://techcommunity.microsoft.com/blog/microsoft-security-blog/start-secure-and-stay-secure-on-your-ai-agent-journey-with-microsoft-defender/4469430"
+
+
+###No Microsoft documentation found in this evaluation describing guaranteed per-user isolation of agent conversation memory across Copilot Studio, Foundry or third-party agents.
+Gaps / caveats: Needs investigation with Microsoft. Related risk: Copilot Studio connections can default to the maker's credentials, so different users may act through the same identity (third-party analysis).
+References: none found - needs further investigation."
+
+
+###Copilot Studio supports human-in-the-loop: multistage approvals and 'Request for information' in agent flows, and a per-tool 'require human approval' setting for tool calls (RM570434, GA listed Sept 2026 - verify).
+Gaps / caveats: Approvals are configured per agent by the maker; Agent 365 does not centrally detect high-risk actions and force approval. Custom agents must implement their own. Needs investigation.
+References: https://mc.merill.net/message/RM570434"
+
+
+###Entra ID Protection for agents detects unusual behaviour (access to unusual resources, sign-in spikes, token replay, repeated failed token use); Purview Insider Risk Management Risky Agents policy alerts when agent activity exceeds thresholds; insights flow to Defender XDR.
+Gaps / caveats: ID Protection for agents will require an Agent 365 licence; Risky Agents policy status (preview vs GA) differs between sources.
+References: https://learn.microsoft.com/en-us/entra/id-protection/concept-risky-agents | https://learn.microsoft.com/en-us/purview/insider-risk-management-monitoring-agents"
+
+
+###Containment options: block an agent in the registry (prevents install/use in M365 experiences), delete, disable the agent identity from the risky agents report (stops all sign-ins), Conditional Access block (managed policy blocks high-risk agents; policies can target all agent identities), and block MCP servers/tools tenant-wide.
+Gaps / caveats: No single 'disable all agents' button was found; use a Conditional Access block on all agent identities plus registry blocks. Test behaviour per agent type before an incident.
+References: https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-actions?view=o365-worldwide | https://learn.microsoft.com/en-us/entra/id-protection/concept-risky-agents | https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-plugins-skills-mcp-servers?view=o365-worldwide"
+###Purview Insider Risk Management: Risky Agents policy is auto-deployed for Copilot Studio and Foundry agents; agents can be added to IRM policies like users (e.g. data exfiltration triggers); Risky AI usage template covers misuse by people.
+Gaps / caveats: Agent-to-agent abuse detection was not found in documentation - needs investigation. Licensing (Agent 365 / E7) and preview status to confirm.
+References: https://learn.microsoft.com/en-us/purview/insider-risk-management-monitoring-agents | https://learn.microsoft.com/en-us/purview/insider-risk-management-policy-templates"
+
+
+###For agents with an Entra Agent ID, ID Protection detects token replay and unusual resource access. Infrastructure-level detections (metadata-service token theft, port scanning, unauthorized API calls) come from Defender for Cloud / Defender for Endpoint workload protection, not Agent 365.
+Gaps / caveats: Coverage for agents hosted in AWS/GCP compute depends on Defender for Cloud multicloud onboarding - not verified. Needs investigation.
+References: https://learn.microsoft.com/en-us/entra/id-protection/concept-risky-agents | https://azure.microsoft.com/en-us/blog/enhance-ai-security-with-azure-prompt-shields-and-azure-ai-content-safety/"
+
+
+###Strong, integrated experience for Microsoft 365/Entra/Azure; registry sync brings Bedrock and Vertex AI agents into the same registry.
+Gaps / caveats: Administration spans several portals (M365 admin center, Entra, Purview, Defender, Power Platform), and multi-cloud features are preview. Usability for UNFI's multi-cloud estate needs hands-on evaluation.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/admin/agent-registry | https://learn.microsoft.com/en-us/microsoft-agent-365/overview"
+
+
+###Microsoft publishes a public Microsoft 365 roadmap, Message Center notices and a monthly 'What's new in Agent 365' blog; integrations (e.g. registry sync partners) are expanding.
+Gaps / caveats: Rapid change and many preview features - plan for frequent re-validation.
+References: https://www.microsoft.com/microsoft-365/roadmap | https://techcommunity.microsoft.com/blog/agent-365-blog/whats-new-in-agent-365-%E2%80%93-june-2026/4535107"
+
+
+###Agent 365 is a Microsoft cloud service managed from the Microsoft 365 admin center, integrated with Entra, Purview and Defender; no customer-hosted infrastructure.
+Gaps / caveats: Custom-agent SDK/OpenTelemetry instrumentation runs in UNFI's own agent hosting.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/overview | https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-365-overview?view=o365-worldwide"
+
+
+###Governance, inventory and observability are largely out-of-band (telemetry is sent asynchronously).
+Gaps / caveats: Entra Agent ID and Conditional Access are in the token path for agents with Entra identities, so an Entra outage would affect agent authentication. Microsoft does not publish a statement on business impact if Agent 365 is unavailable - needs investigation.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/developer/observability-concepts | https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-conditions"
+
+
+###Microsoft cloud services run 24/7 and are covered by Microsoft's SLA for Online Services.
+Gaps / caveats: Whether Agent 365 is specifically listed in the SLA document, and its uptime commitment, was not verified - confirm in the current SLA.
+References: https://www.microsoft.com/licensing/docs/view/Service-Level-Agreements-SLA-for-Online-Services"
+
+
+###All admin portals (Microsoft 365 admin center, Entra, Purview, Defender) use Microsoft Entra ID sign-in, so SSO, MFA and Conditional Access apply to administrators.
+Gaps / caveats: None.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/overview"
+
+
+###Entra built-in roles: AI Administrator (Copilot and AI services), Agent ID Administrator (agent identity lifecycle), Agent ID Developer (create blueprints); tool approvals require AI Administrator or Global Administrator. Purview and Defender have their own RBAC.
+Gaps / caveats: Granular, Agent 365-specific admin roles inside the M365 admin center were not fully confirmed - verify least-privilege role model.
+References: https://docs.azure.cn/en-us/entra/identity/role-based-access-control/permissions-reference | https://learn.microsoft.com/en-us/entra/agent-id/authorization-agent-id | https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-plugins-skills-mcp-servers?view=o365-worldwide"
+
+
+###Microsoft Security Response Center and Microsoft threat intelligence feed Defender for AI and Azure AI Prompt Shields; Microsoft publishes security updates and guidance continuously.
+Gaps / caveats: None specific.
+References: https://msrc.microsoft.com/ | https://azure.microsoft.com/en-us/blog/enhance-ai-security-with-azure-prompt-shields-and-azure-ai-content-safety/"
+
+
+###Licensing has no fixed cap on agents per licensed user (third-party licensing FAQ), and the registry is designed for tenant-wide inventories.
+Gaps / caveats: Agent Map usage data is supported only for tenants with fewer than 4,000 agents (Microsoft Learn). No published performance limits - needs validation at UNFI's expected agent count.
+References: https://learn.microsoft.com/microsoft-365/admin/manage/agent-map | https://www.licensingschool.co.uk/wp-content/uploads/2026/08/Agent-365-FAQs-13-August-2026.pdf"
+
+
+###Microsoft provides standard SLAs for Online Services and support through its support plans.
+Gaps / caveats: Microsoft SLAs are standard terms, not negotiated per customer; UNFI procurement/legal must review whether they are acceptable and whether Agent 365 is covered.
+References: https://www.microsoft.com/licensing/docs/view/Service-Level-Agreements-SLA-for-Online-Services"
+
+
+###Microsoft Learn documentation and training paths (e.g. 'Implement Security for AI'), the Agent 365 get-started guide and Microsoft's own deployment case study (Inside Track).
+Gaps / caveats: Formal instructor-led training would be via Microsoft/partners - not evaluated.
+References: https://learn.microsoft.com/en-us/training/paths/implement-ai-security/ | https://adoption.microsoft.com/files/agents/MicrosoftAgent365GetStartedGuideMAC.pdf | https://www.microsoft.com/insidetrack/blog/implementing-agent-365-how-were-governing-and-managing-ai-agents-at-microsoft/"
+
+
+###Microsoft provides compliance tooling: Purview Compliance Manager premium AI templates (EU AI Act, ISO/IEC 42001, NIST AI RMF - per third-party source, verify in tenant), audit, retention and eDiscovery that support regulatory obligations.
+Gaps / caveats: Regulatory compliance remains UNFI's responsibility; Agent 365-specific certifications/attestations were not verified (check Microsoft Service Trust Portal). Needs investigation.
+References: https://rencore.com/en/blog/managing-monitoring-eu-ai-act-compliance-manager | https://learn.microsoft.com/en-us/office365/servicedescriptions/microsoft-365-service-descriptions/microsoft-365-tenantlevel-services-licensing-guidance/microsoft-purview-service-description"
+
+
+###Extensive Microsoft Learn documentation for Agent 365 (admin, builder, developer), Entra Agent ID, Purview, Defender and auditing.
+Gaps / caveats: Many pages are preview and change often; some pages conflict (e.g. licensing, preview vs GA) - validate against the live documentation.
+References: https://learn.microsoft.com/en-us/microsoft-agent-365/ | https://learn.microsoft.com/en-us/entra/agent-id/authorization-agent-id | https://learn.microsoft.com/en-us/purview/ai-agent-365"
