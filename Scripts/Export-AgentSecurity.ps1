@@ -734,7 +734,9 @@ foreach ($pr in $principals) {
     # Last sign-in
     $lastSignIn = $null
     if ($pr.IsSp) {
-        $act = $signInActByAppId[(Get-Prop $a 'appId')]
+        # Agent identities have no app registration of their own, so appId can be empty.
+        $spAppId = Get-Prop $a 'appId'
+        $act = if ($spAppId) { $signInActByAppId[$spAppId] } else { $null }
         if ($act) { $lastSignIn = Get-Prop (Get-Prop $act 'lastSignInActivity') 'lastSignInDateTime' }
     }
     else {
